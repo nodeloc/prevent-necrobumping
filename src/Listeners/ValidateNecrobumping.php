@@ -17,7 +17,8 @@ use Flarum\Settings\SettingsRepositoryInterface;
 use FoF\PreventNecrobumping\Util;
 use FoF\PreventNecrobumping\Validators\NecrobumpingPostValidator;
 use Illuminate\Support\Arr;
-
+use Flarum\User\Exception\PermissionDeniedException;
+use Flarum\User\User;
 class ValidateNecrobumping
 {
     /**
@@ -49,6 +50,17 @@ class ValidateNecrobumping
             $this->validator->assertValid([
                 'fof-necrobumping' => Arr::get($event->data, 'attributes.fof-necrobumping'),
             ]);
+            // 获取用户实例
+            $user = $event->actor;
+
+            // 检查用户能量是否足够
+            if ($user->money < 100) {
+                throw new PermissionDeniedException('您的能量不足100点，无法进行回复。当前能量：' . $user->money);
+            }
+
+            // 扣除能量
+            $user->money = $user->money - 100;
+            $user->save();
         }
     }
 }
